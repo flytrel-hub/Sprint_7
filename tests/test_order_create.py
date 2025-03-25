@@ -1,6 +1,7 @@
 import pytest
 import allure
 from data import TestData
+from constants import StatusCodes
 
 
 @allure.feature("Order API")
@@ -12,5 +13,7 @@ class TestOrderCreate:
         api = setup
         payload = {**TestData.order_base, **color_data}
         response = api.create_order(payload)
-        assert response.status_code == 201
-        assert "track" in response.json()
+        assert response.status_code == StatusCodes.CREATED_STATUS_CODE, (
+            f"Ожидался код {StatusCodes.CREATED_STATUS_CODE}, получен {response.status_code}"
+        )
+        assert "track" in response.json(), "Ожидался ключ 'track' в ответе"

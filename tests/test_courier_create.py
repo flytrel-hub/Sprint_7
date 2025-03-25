@@ -1,4 +1,5 @@
 import allure
+from constants import ErrorMessages, StatusCodes, ApiResponses
 
 
 @allure.feature("Courier API")
@@ -9,7 +10,6 @@ class TestCourierCreate:
         courier_data = register_new_courier
         assert len(courier_data) == 4
         assert courier_data[3] is not None
-        
 
     @allure.story("Courier Registration")
     @allure.title("Ошибка при создании курьера с существующим логином")
@@ -18,8 +18,12 @@ class TestCourierCreate:
         courier_data = register_new_courier
         payload = {"login": courier_data[0], "password": "newpass", "firstName": "New"}
         response = api.register_courier(payload)
-        assert response.status_code == 409
-        assert response.json()["message"] == "Этот логин уже используется. Попробуйте другой."
+        assert response.status_code == StatusCodes.CONFLICT_STATUS_CODE, (
+            f"Ожидался код {StatusCodes.CONFLICT_STATUS_CODE}, получен {response.status_code}"
+        )
+        assert response.json()["message"] == ErrorMessages.COURIER_DUPLICATE_LOGIN_ERROR, (
+            "Сообщение об ошибке не соответствует ожидаемому"
+        )
 
     @allure.story("Courier Registration")
     @allure.title("Ошибка при создании курьера без обязательного поля")
@@ -27,8 +31,12 @@ class TestCourierCreate:
         api = setup
         payload = {"login": "testusercuri"}
         response = api.register_courier(payload)
-        assert response.status_code == 400, f"Ожидался код 400, получен {response.status_code}"
-        assert response.json()["message"] == "Недостаточно данных для создания учетной записи"
+        assert response.status_code == StatusCodes.BAD_REQUEST_STATUS_CODE, (
+            f"Ожидался код {StatusCodes.BAD_REQUEST_STATUS_CODE}, получен {response.status_code}"
+        )
+        assert response.json()["message"] == ErrorMessages.COURIER_MISSING_FIELDS_ERROR, (
+            "Сообщение об ошибке не соответствует ожидаемому"
+        )
 
     @allure.story("Courier Registration")
     @allure.title("Проверка успешного ответа при создании курьера")
@@ -42,5 +50,9 @@ class TestCourierCreate:
             "firstName": courier_data[2]
         }
         response = api.register_courier(new_payload)
-        assert response.status_code == 201
-        assert response.json() == {"ok": True}
+        assert response.status_code == StatusCodes.CREATED_STATUS_CODE, (
+            f"Ожидался код {StatusCodes.CREATED_STATUS_CODE}, получен {response.status_code}"
+        )
+        assert response.json() == ApiResponses.SUCCESS_RESPONSE, (
+            "Ответ API не соответствует ожидаемому"
+        )
