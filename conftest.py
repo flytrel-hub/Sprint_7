@@ -1,5 +1,7 @@
 import pytest
 from api_methods import ApiMethods
+import random
+import string
 
 
 @pytest.fixture
@@ -9,29 +11,31 @@ def api_client():
 
 @pytest.fixture
 def register_new_courier(api_client):
-    def _register():
-        import random
-        import string
+    def generate_random_string(length):
+        letters = string.ascii_lowercase
+        return ''.join(random.choice(letters) for _ in range(length))
 
-        def generate_random_string(length):
-            letters = string.ascii_lowercase
-            return ''.join(random.choice(letters) for _ in range(length))
+    login = generate_random_string(10)
+    password = generate_random_string(10)
+    first_name = generate_random_string(10)
 
-        login = generate_random_string(10)
-        password = generate_random_string(10)
-        first_name = generate_random_string(10)
+    payload = {
+        "login": login,
+        "password": password,
+        "firstName": first_name
+    }
 
-        payload = {
-            "login": login,
-            "password": password,
-            "firstName": first_name
-        }
+    response = api_client.register_courier(payload)
+    if response.status_code == 201:
+        login_response = api_client.login_courier({"login": login, "password": password})
+        courier_id = login_response.json()["id"] if login_response.status_code == 200 else None
 
-        response = api_client.register_courier(payload)
-        if response.status_code == 201:
-            login_response = api_client.login_courier({"login": login, "password": password})
-            courier_id = login_response.json()["id"] if login_response.status_code == 200 else None
-            return [login, password, first_name, courier_id]
-        return []
+    yield [login, password, first_name, courier_id]
 
-    return _register
+    if courier_id:
+        api_client.delete_courier(courier_id)
+
+
+@pytest.fixture(autouse=True)
+def setup(api_client):
+    return api_client
